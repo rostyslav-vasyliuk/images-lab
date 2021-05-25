@@ -1,9 +1,17 @@
 /* eslint-disable */
 import './App.css';
 import { useEffect, useState, useRef } from 'react';
-import { Button, Switch, Typography } from 'antd';
+import { Button, Switch, Typography, Select, Checkbox, Divider } from 'antd';
 import { FileImageTwoTone, UploadOutlined, EditOutlined } from '@ant-design/icons';
 import { Slider, Card } from 'antd';
+import { Option } from 'antd/lib/mentions';
+
+const image_fromats = [
+  'jpg',
+  'jpeg',
+  'png',
+  'bmp',
+];
 
 function App() {
   const [image1, setImage1] = useState(null);
@@ -17,7 +25,7 @@ function App() {
   const inputFile1 = useRef(null);
   const inputFile2 = useRef(null);
   const [pixelInfo, setPixelInfo] = useState({});
-
+  const [imageFormat, setImageFormat] = useState('jpg');
   useEffect(() => {
     console.log('mount');
     document.getElementById('canvas1').style.display = 'none';
@@ -157,6 +165,7 @@ function App() {
           rgbData[i + 1] = 0;
           rgbData[i + 2] = 0;
           rgbData[i + 3] = 255;
+
         }
       }
 
@@ -189,6 +198,13 @@ function App() {
     ctx3.putImageData(imageData, 0, 0)
   }
 
+  const download = () => {
+    const link = document.createElement('a');
+    link.download = `result_image.${imageFormat}`;
+    link.href = document.getElementById('canvas3').toDataURL()
+    link.click();
+  }
+
   const getPosition = (obj) => {
     var curleft = 0, curtop = 0;
     if (obj.offsetParent) {
@@ -215,6 +231,9 @@ function App() {
         </div>
         <div className={'instr-block'}>
           4. Для перегляду значення пікселя результуючого зображення наведіть мишкою на цей піксель.
+        </div>
+        <div className={'instr-block'}>
+          5. Для завантаження зображення оберіть бажаний тип файлу та натисніть "Завантажити"
         </div>
       </Card>
       <div className="cols">
@@ -301,6 +320,20 @@ function App() {
             </div>
           </div>
 
+          <div className={'saveas'}>
+            <span>
+              Формат:
+            </span>
+            <Select disabled={!isResultDrawed} style={{ width: '100px', marginLeft: '10px', marginRight: '10px' }} defaultValue={imageFormat} onChange={setImageFormat}>
+              {image_fromats.map((format) => (
+                <Option value={format}>{format}</Option>
+              ))}
+            </Select>
+            <Button type='primary' onClick={download} disabled={!isResultDrawed}>
+              {'Зберегти'}
+            </Button>
+          </div>
+
           <div style={{ marginTop: '20px', height: '150px', width: '400px' }}>
             <Card style={{ height: '150px' }}>
               {!pixelInfo.x && (
@@ -334,7 +367,7 @@ function App() {
 
         <Card style={{ height: '400px' }}>
           <div className={'controllers'}>
-            <div>
+            <div style={{ textAlign: 'center' }}>
               Дельта значення для R (по RGB):
             <div className={'slider-wrp'}>
                 <span>0</span>
@@ -344,13 +377,13 @@ function App() {
                   max={255}
                   defaultValue={delta}
                   onAfterChange={setDelta}
-                  style={{ width: '200px' }}
+                  style={{ width: '300px' }}
                 // tooltipVisible
                 />
                 <span>255</span>
               </div>
             </div>
-
+            <Divider style={{ margin: '10px 0px 0px' }} />
             <div className={'switch-wrapper'}>
               <Switch checked={showMatch} onChange={(val) => onControllersChange(val, 'match')} />
               <span className={'switch-label'}>
