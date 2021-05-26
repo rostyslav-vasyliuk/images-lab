@@ -1,9 +1,8 @@
 /* eslint-disable */
 import './App.css';
 import { useEffect, useState, useRef } from 'react';
-import { Button, Switch, Typography, Select, Checkbox, Divider } from 'antd';
+import { Button, Switch, Typography, Select, Divider, Slider, Card } from 'antd';
 import { FileImageTwoTone, UploadOutlined, EditOutlined } from '@ant-design/icons';
-import { Slider, Card } from 'antd';
 import { Option } from 'antd/lib/mentions';
 
 const image_fromats = [
@@ -26,15 +25,15 @@ function App() {
   const inputFile2 = useRef(null);
   const [pixelInfo, setPixelInfo] = useState({});
   const [imageFormat, setImageFormat] = useState('jpg');
+
   useEffect(() => {
-    console.log('mount');
     document.getElementById('canvas1').style.display = 'none';
     document.getElementById('canvas2').style.display = 'none';
     document.getElementById('canvas3').style.display = 'none';
     document.getElementById('canvas3').addEventListener('mousemove', onMouseMove);
 
     return () => {
-
+      document.getElementById('canvas3').removeEventListener('mousemove', onMouseMove);
     };
   }, []);
 
@@ -93,7 +92,6 @@ function App() {
     } else {
       setImage2(img);
     }
-    console.log(e.target.files[0]);
   }
 
   const onDraw = (img, canvasId) => {
@@ -127,12 +125,10 @@ function App() {
     const canvas1 = document.getElementById('canvas1');
     const ctx1 = canvas1.getContext('2d');
     const rgbArray1 = ctx1.getImageData(0, 0, canvas1.width, canvas1.height).data;
-    console.log(rgbArray1);
 
     const canvas2 = document.getElementById('canvas2');
     const ctx2 = canvas2.getContext('2d');
     const rgbArray2 = ctx2.getImageData(0, 0, canvas2.width, canvas2.height).data;
-    console.log(rgbArray2);
 
     const height = canvas1.height > canvas2.height ? canvas1.height : canvas2.height;
     const width = canvas1.width > canvas2.width ? canvas1.width : canvas2.width;
