@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { Button, Switch, Typography, Select, Divider, Slider, Card } from 'antd';
 import { FileImageTwoTone, UploadOutlined, EditOutlined } from '@ant-design/icons';
 import { Option } from 'antd/lib/mentions';
+import Pixelmatch from 'pixelmatch';
 
 const image_fromats = [
   'jpg',
@@ -124,74 +125,28 @@ function App() {
   const drawResult = () => {
     const canvas1 = document.getElementById('canvas1');
     const ctx1 = canvas1.getContext('2d');
-    const rgbArray1 = ctx1.getImageData(0, 0, canvas1.width, canvas1.height).data;
 
     const canvas2 = document.getElementById('canvas2');
     const ctx2 = canvas2.getContext('2d');
-    const rgbArray2 = ctx2.getImageData(0, 0, canvas2.width, canvas2.height).data;
 
     const height = canvas1.height > canvas2.height ? canvas1.height : canvas2.height;
     const width = canvas1.width > canvas2.width ? canvas1.width : canvas2.width;
-    const length = rgbArray1.length > rgbArray2.length ? rgbArray1.length : rgbArray2.length;
 
-    const rgbData = new Uint8ClampedArray(height * width * 4);
-
-    for (let i = 0; i < length; i += 4) {
-      const rValueDiff = rgbArray1[i] > rgbArray2[i] ? rgbArray1[i] - rgbArray2[i] : rgbArray2[i] - rgbArray1[i];
-
-      if (showMatch) {
-        if (rValueDiff <= delta) {
-          rgbData[i] = (rgbArray1[i] + rgbArray2[i]) / 2;
-        } else {
-          rgbData[i] = 0;
-        }
-        rgbData[i + 1] = 0;
-        rgbData[i + 2] = 0;
-        rgbData[i + 3] = 255;
-      }
-
-      if (showMatchAllColors) {
-        if (rValueDiff <= delta) {
-          rgbData[i] = (rgbArray1[i] + rgbArray2[i]) / 2;
-          rgbData[i + 1] = (rgbArray1[i + 1] + rgbArray2[i + 1]) / 2;
-          rgbData[i + 2] = (rgbArray1[i + 2] + rgbArray2[i + 2]) / 2;
-          rgbData[i + 3] = (rgbArray1[i + 3] + rgbArray2[i + 3]) / 2;
-        } else {
-          rgbData[i] = 0;
-          rgbData[i + 1] = 0;
-          rgbData[i + 2] = 0;
-          rgbData[i + 3] = 255;
-
-        }
-      }
-
-      if (showImage1) {
-        if (rValueDiff <= delta) {
-          rgbData[i] = rgbArray1[i];
-          rgbData[i + 1] = rgbArray1[i + 1];
-          rgbData[i + 2] = rgbArray1[i + 2];
-          rgbData[i + 3] = rgbArray1[i + 3];
-        }
-      }
-
-      if (showImage2) {
-        if (rValueDiff <= delta) {
-          rgbData[i] = rgbArray2[i];
-          rgbData[i + 1] = rgbArray2[i + 1];
-          rgbData[i + 2] = rgbArray2[i + 2];
-          rgbData[i + 3] = rgbArray2[i + 3];
-        }
-      }
-    }
     setIsResultDrawedd(true);
     document.getElementById('canvas3').style.display = 'block';
+    const img1 = ctx1.getImageData(0, 0, width, height);
+    const img2 = ctx2.getImageData(0, 0, width, height);
+
     const canvas3 = document.getElementById('canvas3');
     canvas3.height = height;
     canvas3.width = width;
+
     const ctx3 = canvas3.getContext('2d');
-    ctx3.clearRect(0, 0, canvas3.width, canvas3.height);
-    const imageData = new ImageData(rgbData, width, height);
-    ctx3.putImageData(imageData, 0, 0)
+    const diff = ctx3.createImageData(width, height);
+    console.log(img1.data, img2.data);
+    Pixelmatch(img1.data, img2.data, diff.data, width, height, { threshold: delta / 255 });
+
+    ctx3.putImageData(diff, 0, 0);
   }
 
   const download = () => {
@@ -217,10 +172,10 @@ function App() {
     <div>
       <Card size="small" title="Інструкція до виконання" style={{ width: '80%', margin: '25px auto' }}>
         <div className={'instr-block'}>
-          1. Завантажте "Зображення 1" та "Зображення 2" у якості джерела даних для знаходження спільних пікселів по значенню R (за RGB) із відхиленням "Дельта".
+          1. Завантажте "Зображення 1" та "Зображення 2" у якості джерела даних для знаходження різниці із відхиленням "Дельта".
         </div>
         <div className={'instr-block'}>
-          2. Оберіть налаштування виводу результату. Доступні опції дозволяють змінити значення "Дельта", показати збіг двох зображень по R згідно "Дельта", та показати точки із 1 та 2 зображень, які задовольняють умову збігу.
+          2. Оберіть налаштування виводу результату. Доступні опції дозволяють змінити значення "Дельта".
         </div>
         <div className={'instr-block'}>
           3. Натисніть кнопку "Намалювати".
@@ -330,7 +285,40 @@ function App() {
             </Button>
           </div>
 
-          <div style={{ marginTop: '20px', height: '150px', width: '400px' }}>
+        </div>
+
+        <Card style={{ height: '400px' }}>
+          <div className={'controllers'}>
+            <div style={{ textAlign: 'center', marginTop: '20px' }}>
+              Дельта (допустиме відхилення):
+            <div className={'slider-wrp'}>
+                <span>0</span>
+                <Slider
+                  step={1}
+                  min={0}
+                  max={100}
+                  defaultValue={delta}
+                  onAfterChange={setDelta}
+                  style={{ width: '300px' }}
+                // tooltipVisible
+                />
+                <span>100</span>
+              </div>
+            </div>
+            {/* <Divider style={{ margin: '10px 0px 0px' }} /> */}
+
+            <Button
+              type="primary"
+              className={'drawBtn'}
+              onClick={drawResult}
+              disabled={!(image1 && image2)}
+              icon={<EditOutlined />}
+            >
+              {'Намалювати'}
+            </Button>
+          </div>
+
+          <div style={{ marginTop: '40px', height: '150px', width: '400px' }}>
             <Card style={{ height: '150px' }}>
               {!pixelInfo.x && (
                 <div className={'no-image'}>
@@ -358,64 +346,6 @@ function App() {
                 </div>
               )}
             </Card>
-          </div>
-        </div>
-
-        <Card style={{ height: '400px' }}>
-          <div className={'controllers'}>
-            <div style={{ textAlign: 'center' }}>
-              Дельта значення для R (по RGB):
-            <div className={'slider-wrp'}>
-                <span>0</span>
-                <Slider
-                  step={1}
-                  min={0}
-                  max={255}
-                  defaultValue={delta}
-                  onAfterChange={setDelta}
-                  style={{ width: '300px' }}
-                // tooltipVisible
-                />
-                <span>255</span>
-              </div>
-            </div>
-            <Divider style={{ margin: '10px 0px 0px' }} />
-            <div className={'switch-wrapper'}>
-              <Switch checked={showMatch} onChange={(val) => onControllersChange(val, 'match')} />
-              <span className={'switch-label'}>
-                Показати збіг обох по R (результат - середня R, G = 0, B = 0)
-              </span>
-            </div>
-
-            <div className={'switch-wrapper'}>
-              <Switch checked={showMatchAllColors} onChange={(val) => onControllersChange(val, 'matchAll')} />
-              <span className={'switch-label'}>
-                Показати збіг обох по R (результат - середня R, G, B)
-              </span>
-            </div>
-
-            <div className={'switch-wrapper'}>
-              <Switch checked={showImage1} onChange={(val) => onControllersChange(val, 'image1')} />
-              <span className={'switch-label'}>
-                Показати точки збігу зображення 1
-              </span>
-            </div>
-
-            <div className={'switch-wrapper'}>
-              <Switch checked={showImage2} onChange={(val) => onControllersChange(val, 'image2')} />
-              <span className={'switch-label'}>
-                Показати точки збігу зображення 2
-              </span>
-            </div>
-            <Button
-              type="primary"
-              className={'drawBtn'}
-              onClick={drawResult}
-              disabled={!(image1 && image2)}
-              icon={<EditOutlined />}
-            >
-              {'Намалювати'}
-            </Button>
           </div>
         </Card>
       </div>
